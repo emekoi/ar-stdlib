@@ -2,14 +2,14 @@
 import os, sys, platform, json
 
 INSTALL = "install"
-SUFFIX = "so"
+SUFFIX = ".so"
 
 # EXECUTABLE 755
 # REGULAR 644
 
 if platform.system() == "Windows":
   sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-  SUFFIX = "dll"
+  SUFFIX = ".dll"
   # INSTALL = "cp"
 
 
@@ -20,25 +20,16 @@ def fmt(fmt, dic):
 
 
 def process(packages):
-  global INSTALL, SUFFIX
-
   res = 0
 
   for package in packages:
     config = json.load(open(package))
 
-    print "installing %s from %s" % (config['name'], package)
+    print "installing %s%s" % (config['name'], SUFFIX)
 
     cmd = fmt("mkdir -p \"/usr/local/{target}/aria/{version}\" && " +
-        "%s -m644 {name}.%s \"/usr/local/{target}/aria/{version}\"", config) % (INSTALL, SUFFIX)
-
-    print cmd
-    if res == 0:
-      print "done"
-    else:
-      print "done with errors"
+        "%s -m644 {name}%s \"/usr/local/{target}/aria/{version}\"", config) % (INSTALL, SUFFIX)
       
-
 
 def main():
   if len(sys.argv) < 2:

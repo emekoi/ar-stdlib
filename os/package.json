@@ -4,8 +4,8 @@
   "version": "0.1.1",
   "src": [ "p_os.c" ],
   "include": [  ],
-  "link": [ "m" ],
+  "link": [  ],
   "define": [  ],
-  "flags": [ "-Wall", "-Wextra", "--std=c99", "-pedantic", "-fno-strict-aliasing" ],
+  "flags": [  ],
   "extra": [  ]
 }
