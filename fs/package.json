@@ -1,0 +1,11 @@
+{
+  "name": "fs",
+  "target": "lib",
+  "version": "0.1.1",
+  "src": [ "p_fs.c", "src/fs.c" ],
+  "include": [  ],
+  "link": [ "m" ],
+  "define": [  ],
+  "flags": [ "-Wall", "-Wextra", "--std=c99", "-pedantic", "-fno-strict-aliasing" ],
+  "extra": [  ]
+}
