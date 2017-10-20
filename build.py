@@ -5,7 +5,8 @@ import install
 SUFFIX = ".so"
 COMPILER = "gcc"
 INCLUDE = [  ]
-LINK = [ "aria" ]
+# LINK = [ "aria" ]
+LINK = [ ]
 DEFINE = [  ]
 FLAGS = [ "-Wall", "-Wextra", "--std=c99", "-pedantic", "-fno-strict-aliasing", "-O3" ]
 EXTRA = [  ]
@@ -67,12 +68,12 @@ def main():
       print cmd
 
     clearup(config['name'])
-    os.system(cmd)
+    # os.system(cmd)
 
     if os.path.isfile(config['name'] + SUFFIX):
-      os.system("strip %s" % (config['name'] + SUFFIX))
+    #   os.system("strip %s" % (config['name'] + SUFFIX))
 
-  install.process(SEARCH)
+  # install.process(SEARCH)
 
 if __name__ == "__main__":
   main()

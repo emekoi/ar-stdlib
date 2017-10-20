@@ -1,0 +1,4 @@
+: p_os.c |> gcc -c -fPIC p_os.c -o p_os.o |> p_os.o
+/*ARIA = ../../aria/src/aria.c*/
+/*: p_os.c |> gcc -shared p_os.c -o os.so ../../aria/src/aria.c |> os.so*/
+/*gcc -shared -Wl,-soname,libmean.so.1 -o libmean.so.1.0.1  calc_mean.o*/

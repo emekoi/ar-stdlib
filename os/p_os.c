@@ -42,36 +42,39 @@ static ar_Value *os_popen(ar_State *S, ar_Value *args) {
   char *command = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 0), AR_TSTRING));
   char *mode = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 1), AR_TSTRING));
 
-  if (!(strcmp(mode, "w") == 0 || strcmp(mode, "r")))
+  if (!(strcmp(mode, "w") == 0 || strcmp(mode, "r") == 0))
     ar_error_str(S, "unknown mode %s", mode);
 
   FILE *fp = popen(command, mode);
   if (!fp) ar_error_str(S, "could not open pipe for %s", command);
 
   if (!strcmp(mode, "r")) {
-    size_t len = 0; char *data = read_stream(fp, &len);
-    pclose(fp); return ar_new_stringl(S, data, len);
+    size_t len = 0; char *data = read_stream(stdout, &len);
+    ar_Value *res = ar_new_string(S, data);
+    pclose(fp); return res;
   } else {
     size_t len = 0;
     char *data = (char *)ar_to_stringl(S, ar_check(S, ar_nth(args, 2), AR_TSTRING), &len);
-    // if (!data) data = read_stream(stdin, &len);
     int res = fwrite(data, strlen(data), 1, fp); pclose(fp);
-    if (res != 0) ar_error_str(S, "failed to write %s to pipe");
+    if (res == -1) ar_error_str(S, "error writing to pipe");
     return NULL;
   }
 }
 
+
 ar_Value *ar_open_os(ar_State *S, ar_Value* args) {
-	UNUSED(args);
+	// UNUSED(args);
   /* list of functions to register */
   struct { const char *name; ar_CFunc fn; } funcs[] = {
 		{ "os-system", os_system },
 		{ "os-popen",  os_popen  },
     { NULL, NULL }
   };
+
   /* register functions */
   for (int i = 0; funcs[i].name; i++) {
     ar_bind_global(S, funcs[i].name, ar_new_cfunc(S, funcs[i].fn));
   }
+
 	return NULL;
 }
