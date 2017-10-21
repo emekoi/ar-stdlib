@@ -1,24 +1,11 @@
-# aria
-A *tiny*, easily embeddable lisp-shaped language implemented in C99.
-
-```lisp
-(do
-
-  (= fib (fn (n)
-    (if (>= n 2)
-        (+ (fib (- n 1)) (fib (- n 2)))
-        n)))
-
-  (print (fib 20))) ; prints 6765
-```
+# ar-stdlib
+the standard library for [aria](https://github.com/emekoi/aria).
 
 
-## Overview
-* Supports numbers (floats), symbols, strings, pairs, lambdas, macros
-* Stack tracebacks with filename and line numbers on error
-* Exception-like error handling
-* Simple implementation and garbage collector
-* Easy-to-use C API
+## modules
+* [a file system](fs)
+* [os related utilies](os)
+* [networking](net)
 
 
 ## License

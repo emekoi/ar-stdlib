@@ -1,5 +1,6 @@
 include_rules
 
-BINARY = os
+BINARY = fs
 : foreach *.c |> !COMPILE |>
+: fs/fs.c |> !COMPILE |>
 : *.o |> !LINK |>

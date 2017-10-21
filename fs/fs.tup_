@@ -1,1 +1,0 @@
-: p_os.c |> gcc -shared p_os.c -o os.so ../../aria/src/aria.c |> os.so

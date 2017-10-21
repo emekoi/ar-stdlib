@@ -5,6 +5,13 @@
  * under the terms of the MIT license. See LICENSE for details.
  */
 
+#if _WIN32
+  #include <windows.h>
+#elif __linux__
+  #include <unistd.h>
+#elif __APPLE__
+  #include <mach-o/dyld.h>
+#endif
 
 #include <string.h>
 #include <stdlib.h>
@@ -12,9 +19,20 @@
 
 #define UNUSED(x) ((void) x)
 
-static ar_Value *os_system(ar_State *S, ar_Value *args) {
+#define ASSERT(x)\
+  do {\
+    if (!(x)) {\
+      fprintf(stderr, "%s:%d: %s(): assertion '%s' failed\n",\
+              __FILE__, __LINE__, __func__, #x);\
+      abort();\
+    }\
+  } while (0)
+
+
+static ar_Value *ar_os_system(ar_State *S, ar_Value *args) {
   char *command = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 0), AR_TSTRING));
-  return ar_new_number(S, (double)system(command));
+  ar_Value *res = ar_new_number(S, (double)system(command));
+  return res;
 }
 
 
@@ -38,7 +56,7 @@ static void *read_stream(FILE *fp, size_t *len) {
 }
 
 
-static ar_Value *os_popen(ar_State *S, ar_Value *args) {
+static ar_Value *ar_os_popen(ar_State *S, ar_Value *args) {
   char *command = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 0), AR_TSTRING));
   char *mode = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 1), AR_TSTRING));
 
@@ -51,23 +69,97 @@ static ar_Value *os_popen(ar_State *S, ar_Value *args) {
   if (!strcmp(mode, "r")) {
     size_t len = 0; char *data = read_stream(stdout, &len);
     ar_Value *res = ar_new_string(S, data);
-    pclose(fp); return res;
+    pclose(fp);
+    return res;
   } else {
     size_t len = 0;
     char *data = (char *)ar_to_stringl(S, ar_check(S, ar_nth(args, 2), AR_TSTRING), &len);
     int res = fwrite(data, strlen(data), 1, fp); pclose(fp);
     if (res == -1) ar_error_str(S, "error writing to pipe");
-    return NULL;
+    return ar_new_number(S, res);
   }
+}
+
+static char *dirname(char *str) {
+  char *p = str + strlen(str);
+  while (p != str) {
+    if (*p == '/' || *p == '\\') {
+      *p = '\0';
+      break;
+    }
+    p--;
+  }
+  return str;
+}
+
+static ar_Value *ar_os_info(ar_State *S, ar_Value *args) {
+  char *str = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 0), AR_TSTRING));
+
+  if (!strcmp(str, "os")) {
+#if _WIN32
+    return ar_new_string(S, "windows");
+#elif __linux__
+    return ar_new_string(S, "linux");
+#elif __FreeBSD__
+    return ar_new_string(S, "bsd");
+#elif __APPLE__
+    return ar_new_string(S, "osx");
+#else
+    return ar_new_string(S, "?");
+#endif
+
+  } else if (!strcmp(str, "exedir")) {
+    UNUSED(dirname);
+#if _WIN32
+    char buf[1024];
+    int len = GetModuleFileName(NULL, buf, sizeof(buf) - 1);
+    buf[len] = '\0';
+    dirname(buf);
+    return ar_new_stringf(S, "%s", buf);
+#elif __linux__
+    char path[128];
+    char buf[1024];
+    sprintf(path, "/proc/%d/exe", getpid());
+    int len = readlink(path, buf, sizeof(buf) - 1);
+    ASSERT( len != -1 );
+    buf[len] = '\0';
+    dirname(buf);
+    return ar_new_stringf(S, "%s", buf);
+#elif __FreeBSD__
+    /* TODO : Implement this */
+    return ar_new_stringf(S, ".");
+#elif __APPLE__
+    char buf[1024];
+    uint32_t size = sizeof(buf);
+    ASSERT( _NSGetExecutablePath(buf, &size) == 0 );
+    dirname(buf);
+    return ar_new_stringf(S, "%s", buf);
+#else
+    return ar_new_string(S, ".");
+#endif
+
+  } else if (!strcmp(str, "appdata")) {
+#if _WIN32
+    return ar_new_stringf(S, "%s", getenv("APPDATA"));
+#elif __APPLE__
+    return ar_new_stringf(S, "%s/Library/Application Support", getenv("HOME"));
+#else
+    return ar_new_stringf(S, "%s/.local/share", getenv("HOME"));
+#endif
+  } else {
+    ar_error_str(S, "invalid string '%s'", str);
+  }
+  return NULL;
 }
 
 
 ar_Value *ar_open_os(ar_State *S, ar_Value* args) {
-	// UNUSED(args);
+  UNUSED(args);
   /* list of functions to register */
   struct { const char *name; ar_CFunc fn; } funcs[] = {
-		{ "os-system", os_system },
-		{ "os-popen",  os_popen  },
+    { "os-system", ar_os_system },
+    { "os-popen",  ar_os_popen  },
+    { "os-info",   ar_os_info   },
     { NULL, NULL }
   };
 
@@ -75,6 +167,5 @@ ar_Value *ar_open_os(ar_State *S, ar_Value* args) {
   for (int i = 0; funcs[i].name; i++) {
     ar_bind_global(S, funcs[i].name, ar_new_cfunc(S, funcs[i].fn));
   }
-
-	return NULL;
+  return NULL;
 }

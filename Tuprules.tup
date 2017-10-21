@@ -1,0 +1,5 @@
+CFLAGS += -Wall -Wextra -c -fPIC -fno-strict-aliasing
+LFLAGS += -shared -Wl,-install_name,
+
+!COMPILE = |> gcc $(CFLAGS) %f -o %o |> %B.o
+!LINK = |> gcc $(LFLAGS)%o %f -o %o |> $(BINARY).so
