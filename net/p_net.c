@@ -63,9 +63,20 @@ static ar_Value *ar_net_setPanic(ar_State *S, ar_Value *args) {
 
 
 static ar_Value *ar_net_stream_gc(ar_State *S, ar_Value *args) {
-  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
-  dyad_end(s);
+  dyad_end(ar_check_udata(S, ar_nth(args, 0)));
   return NULL;
+}
+
+
+static ar_Value *ar_net_stream_new(ar_State *S, ar_Value *args) {
+  dyad_Stream *s = dyad_newStream();
+  return ar_new_udata(S, s, ar_net_stream_gc, NULL);
+}
+
+
+static ar_Value *ar_net_stream_listen(ar_State *S, ar_Value *args) {
+  dyad_listen(ar_check_udata(S, ar_nth(args, 0)), ar_check_number(S, ar_nth(args, 1)));
+  return S->t;
 }
 
 
@@ -81,8 +92,10 @@ ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
     { "net-setTickInterval",  ar_net_setTickInterval  },
     { "net-setPanic",         ar_net_setPanic         },
 
+    { "net-newStream",        ar_net_stream_new },
+    { "net-listen",        ar_net_stream_listen },
 
-    { "net-update",        ar_net_update },
+
     { "net-update",        ar_net_update },
     { "net-update",        ar_net_update },
     { "net-update",        ar_net_update },
