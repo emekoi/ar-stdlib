@@ -155,20 +155,20 @@ ar_Value *ar_open_fs(ar_State *S, ar_Value* args) {
   UNUSED(args);
   /* list of functions to register */
   struct { const char *name; ar_CFunc fn; } funcs[] = {
-    { "fs-mount",        ar_fs_mount        },
-    { "fs-unmount",      ar_fs_unmount      },
-    { "fs-setWritePath", ar_fs_setWritePath },
-    { "fs-exists",       ar_fs_exists       },
-    { "fs-getSize",      ar_fs_getSize      },
-    { "fs-getModified",  ar_fs_getModified  },
-    { "fs-read",         ar_fs_read         },
-    { "fs-isDir",        ar_fs_isDir        },
-    { "fs-isFile",       ar_fs_isFile       },
-    { "fs-listDir",      ar_fs_listDir      },
-    { "fs-write",        ar_fs_write        },
-    { "fs-append",       ar_fs_append       },
-    { "fs-delete",       ar_fs_delete       },
-    { "fs-makeDirs",     ar_fs_makeDirs     },
+    { "fs-mount",        ar_fs_mount        }, /* works */
+    { "fs-unmount",      ar_fs_unmount      }, /* works */
+    { "fs-setWritePath", ar_fs_setWritePath }, /* works */
+    { "fs-exists",       ar_fs_exists       }, /* works */
+    { "fs-getSize",      ar_fs_getSize      }, /* works */
+    { "fs-getModified",  ar_fs_getModified  }, /* works */
+    { "fs-read",         ar_fs_read         }, /* works */
+    { "fs-isDir",        ar_fs_isDir        }, /* works */
+    { "fs-isFile",       ar_fs_isFile       }, /* works */
+    { "fs-listDir",      ar_fs_listDir      }, /* works */
+    { "fs-write",        ar_fs_write        }, /* works */
+    { "fs-append",       ar_fs_append       }, /* works */
+    { "fs-delete",       ar_fs_delete       }, /* works */
+    { "fs-makeDirs",     ar_fs_makeDirs     }, /* works */
     { NULL, NULL }
   };
 

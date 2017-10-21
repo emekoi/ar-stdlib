@@ -1,0 +1,11 @@
+{
+  "name": "net",
+  "target": "lib",
+  "version": "0.1.1",
+  "src": [ "p_net.c", "src/dyad.c" ],
+  "include": [  ],
+  "link": [  ],
+  "define": [  ],
+  "flags": [  ],
+  "extra": [  ]
+}

@@ -18,6 +18,9 @@
 #include <aria/aria.h>
 
 #define UNUSED(x) ((void) x)
+#define AR_GET_ARG(idx, type) S, ar_check(S, ar_nth(args, idx), type)
+#define AR_GET_STRING(idx) (char *)ar_to_string(AR_GET_ARG(idx, AR_TSTRING))
+#define AR_GET_STRINGL(idx, len) (char *)ar_to_stringl(AR_GET_ARG(idx, AR_TSTRING), &len)
 
 #define ASSERT(x)\
   do {\
@@ -30,7 +33,7 @@
 
 
 static ar_Value *ar_os_system(ar_State *S, ar_Value *args) {
-  char *command = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 0), AR_TSTRING));
+  char *command = AR_GET_STRING(0);
   ar_Value *res = ar_new_number(S, (double)system(command));
   return res;
 }
@@ -57,9 +60,8 @@ static void *read_stream(FILE *fp, size_t *len) {
 
 
 static ar_Value *ar_os_popen(ar_State *S, ar_Value *args) {
-  char *command = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 0), AR_TSTRING));
-  char *mode = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 1), AR_TSTRING));
-
+  char *command = AR_GET_STRING(0);
+  char *mode = AR_GET_STRING(1);
   if (!(strcmp(mode, "w") == 0 || strcmp(mode, "r") == 0))
     ar_error_str(S, "unknown mode %s", mode);
 
@@ -93,7 +95,7 @@ static char *dirname(char *str) {
 }
 
 static ar_Value *ar_os_info(ar_State *S, ar_Value *args) {
-  char *str = (char *)ar_to_string(S, ar_check(S, ar_nth(args, 0), AR_TSTRING));
+  char *str = AR_GET_STRING(0);
 
   if (!strcmp(str, "os")) {
 #if _WIN32
@@ -157,9 +159,9 @@ ar_Value *ar_open_os(ar_State *S, ar_Value* args) {
   UNUSED(args);
   /* list of functions to register */
   struct { const char *name; ar_CFunc fn; } funcs[] = {
-    { "os-system", ar_os_system },
-    { "os-popen",  ar_os_popen  },
-    { "os-info",   ar_os_info   },
+    { "os-system", ar_os_system }, /* works */
+    { "os-popen",  ar_os_popen  }, /* workd wrong */
+    { "os-info",   ar_os_info   }, /* works */
     { NULL, NULL }
   };
 

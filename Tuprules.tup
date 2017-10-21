@@ -1,5 +1,16 @@
 CFLAGS += -Wall -Wextra -c -fPIC -fno-strict-aliasing
-LFLAGS += -shared -Wl,-install_name,
+LFLAGS += -shared
+
+ifneq (@(OS),osx)
+LFLAGS += -Wl,-soname,
+else
+LFLAGS += -Wl,-install_name,
+endif
+
+ifeq (@(OS),win32)
+LINK += -lws2_32
+endif
+
 
 !COMPILE = |> gcc $(CFLAGS) %f -o %o |> %B.o
-!LINK = |> gcc $(LFLAGS)%o %f -o %o |> $(BINARY).so
+!LINK = |> gcc $(LFLAGS)%o %f -o %o $(LINK) |> $(BINARY).so
