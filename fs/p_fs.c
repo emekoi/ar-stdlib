@@ -37,7 +37,7 @@ static ar_Value *ar_fs_mount(ar_State *S, ar_Value *args) {
 static ar_Value *ar_fs_unmount(ar_State *S, ar_Value *args) {
   const char *path = AR_GET_STRING(0);
   fs_unmount(path);
-  return NULL;
+  return S->t;
 }
 
 
@@ -45,7 +45,7 @@ static ar_Value *ar_fs_setWritePath(ar_State *S, ar_Value *args) {
   const char *path = AR_GET_STRING(0);
   int res = fs_setWritePath(path);
   checkError(S, res, path);
-  return NULL;
+  return S->t;
 }
 
 
@@ -117,7 +117,7 @@ static ar_Value *ar_fs_write(ar_State *S, ar_Value *args) {
   const char *data = AR_GET_STRINGL(1, len);
   int res = fs_write(filename, data, len);
   checkError(S, res, filename);
-  return NULL;
+  return S->t;
 }
 
 
@@ -127,7 +127,7 @@ static ar_Value *ar_fs_append(ar_State *S, ar_Value *args) {
   const char *data = AR_GET_STRINGL(1, len);
   int res = fs_append(filename, data, len);
   checkError(S, res, filename);
-  return NULL;
+  return S->t;
 }
 
 
@@ -147,7 +147,7 @@ static ar_Value *ar_fs_makeDirs(ar_State *S, ar_Value *args) {
   if (res != FS_ESUCCESS) {
     ar_error_str(S, "%s '%s'", fs_errorStr(res), path);
   }
-  return 0;
+  return S->t;
 }
 
 
@@ -176,7 +176,6 @@ ar_Value *ar_open_fs(ar_State *S, ar_Value* args) {
   for (int i = 0; funcs[i].name; i++) {
     ar_bind_global(S, funcs[i].name, ar_new_cfunc(S, funcs[i].fn));
   }
-
   atexit(fs_deinit);
-  return NULL;
+  return S->t;
 }
