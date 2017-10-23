@@ -1,6 +1,10 @@
 include_rules
 
+: aria.c |> !COMPILE |>
+: foreach dyad/dyad.c p_net.c |> !COMPILE |>
+: foreach sand/sand.c p_http.c |> !COMPILE |>
+
 BINARY = net
-: foreach *.c |> !COMPILE |>
-: dyad/dyad.c |> !COMPILE |>
-: *.o |> !LINK |>
+: foreach aria.o sand.o p_net.o |> !LINK |>
+BINARY = http
+: foreach aria.o sand.o p_http.o |> !LINK |>
