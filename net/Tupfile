@@ -2,5 +2,6 @@ include_rules
 
 BINARY = net
 : foreach *.c |> !COMPILE |>
-: foreach *.o |> !LINK |>
+: dyad/dyad.c |> !COMPILE |>
+: *.o |> !LINK |>
 : foreach *.o |> rm -rf %f |>
