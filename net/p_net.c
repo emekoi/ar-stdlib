@@ -101,25 +101,75 @@ static ar_Value *ar_net_stream_connect(ar_State *S, ar_Value *args) {
 }
 
 
-// static ar_Value *ar_net_stream_write(ar_State *S, ar_Value *args){
-//   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
-//   dyad_write(s, const void *data, int size);
-//   return S->t;
-// }
+static ar_Value *ar_net_stream_write(ar_State *S, ar_Value *args){
+  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+  size_t len;
+  const char *str = ar_to_stringl(S, ar_nth(args, 1), &len);
+  dyad_write(s, str, len);
+  return S->t;
+}
 
 
-// static ar_Value *ar_net_stream_vwritef(ar_State *S, ar_Value *args){
-//   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
-//   dyad_vwritef(s, const char *fmt, va_list args);
-//   return S->t;
-// }
+static int is_alpha(char c) {
+  return (c >= 'a' && c <= 'z') ||
+         (c >= 'A' && c <= 'Z') ||
+         (c == '_');
+}
 
 
-// static ar_Value *ar_net_stream_writef(ar_State *S, ar_Value *args){
-//   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
-//   dyad_writef(s, const char *fmt, ...);
-//   return S->t;
-// }
+#define format(S, c, v) ar_new_stringf(S, "%"c, v)
+
+static ar_Value *parse_format(ar_State *S, const char *c, ar_Value *args) {
+  int num = round(ar_to_number(S, ar_car(args)));
+  switch (*c++) {
+    case 'c': case 'u': 
+      ar_check_number(S, ar_car(args));
+      return format(S, *c, (unsigned int)num);
+    case 'i': case 'd': case 'x': 
+    case 'X': case 'o':
+      ar_check_number(S, ar_car(args));
+      return format(S, *c, num);
+    case 'e': case 'E': case 'f': case 'g': 
+      ar_check_number(S, ar_car(args));
+      return format(S, *c, ar_to_number(S, ar_car(args)));
+    case 'p':
+      return format(S, *c, ar_car(args));
+    case 'q': 
+      return format(S, *c, ar_to_string_value(S, ar_car(args), 1)->u.str.s);
+    case 's':
+      return format(S, *c, ar_to_string_value(S, ar_car(args), 0)->u.str.s);
+    default: 
+      if (is_alpha(*c))
+        ar_error_str(S, "invalid option '%c'", *c);
+      else
+        ar_error_str(S, "expected option");
+  }
+  return NULL;
+}
+
+
+static ar_Value *ar_net_stream_writef(ar_State *S, ar_Value *args){
+  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+  size_t len;
+  const char *str = ar_to_stringl(S, ar_nth(args, 1), &len);
+  args = ar_cdr(args);
+  const char *str_end = str + len;
+  ar_Value *res = NULL, **last = &res;
+  while (str < str_end) {
+    if (*str != '%') {
+      char buf[2]; buf[0] = *str++; buf[1] = '\0';
+      last = ar_append_tail(S, last, ar_new_string(S, buf));
+    } else if (*++str == '%') {
+      char buf[2]; buf[0] = *str++; buf[1] = '\0';
+      last = ar_append_tail(S, last, ar_new_string(S, buf));
+    } else {
+      last = ar_append_tail(S, last, parse_format(S, str++, ar_cdr(args)));
+      args = ar_cdr(args);
+    }
+  } 
+  dyad_writef(s, join_list_of_strings(S, res));
+  return S->t;
+}
 
 
 static ar_Value *ar_net_stream_setTimeout(ar_State *S, ar_Value *args){
@@ -194,9 +244,8 @@ ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
     // { "net-removeAllListeners", ar_net_stream_removeAllListeners },
     { "net-end",                ar_net_stream_end                },
     { "net-close",              ar_net_stream_close              },
-    // { "net-write",              ar_net_stream_write              },
-    // { "net-vwritef",            ar_net_stream_vwritef            },
-    // { "net-writef",             ar_net_stream_vwritef            },
+    { "net-write",              ar_net_stream_write              },
+    { "net-writef",             ar_net_stream_vwritef            },
     { "net-setTimeout",         ar_net_stream_setTimeout         },
     { "net-setNoDelay",         ar_net_stream_setNoDelay         },
     { "net-getState",           ar_net_stream_getState           },
