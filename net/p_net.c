@@ -223,6 +223,11 @@ static ar_Value *ar_net_stream_getBytesReceived(ar_State *S, ar_Value *args) {
 }
 
 
+/*
+TODO: ADD BROADCAST FUNCTION
+  IN THE ACCEPT EVENT LIDSTENER ADD ALL THE REMOTES IN TAND ARRAY
+*/
+
 
 
 ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
