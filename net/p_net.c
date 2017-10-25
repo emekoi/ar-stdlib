@@ -115,49 +115,60 @@ static void onEvent(dyad_Event *e) {
 
   switch(e->type) {
     case DYAD_EVENT_DESTROY: {
-      ar_call(S, ar_get_env(S, "destroy", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (get_env(S, "destroy", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "destroy", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_ACCEPT: {
-      ar_call(S, ar_get_env(S, "accept", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (_get_env(S, "accept", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "accept", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_LISTEN: {
-      ar_call(S, ar_get_env(S, "listen", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (_get_env(S, "listen", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "listen", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_CONNECT: {
-      ar_call(S, ar_get_env(S, "connect", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (get_env(S, "connect", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "connect", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_CLOSE: {
-      ar_call(S, ar_get_env(S, "close", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (r_get_env(S, "close", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "close", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_READY: {
-      ar_call(S, ar_get_env(S, "ready", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (r_get_env(S, "ready", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "ready", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_DATA: {
-      ar_call(S, ar_get_env(S, "data", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (ar_get_env(S, "data", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "data", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_LINE: {
-      ar_call(S, ar_get_env(S, "line", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (ar_get_env(S, "line", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "line", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_ERROR: {
-      ar_call(S, ar_get_env(S, "error", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (r_get_env(S, "error", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "error", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_TIMEOUT: {
-      ar_call(S, ar_get_env(S, "timeout", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (get_env(S, "timeout", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "timeout", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     } case DYAD_EVENT_TICK: {
-      ar_call(S, ar_get_env(S, "tick", ar_net_cb_env),
-        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      break;
+      if (ar_get_env(S, "tick", ar_net_cb_env)) {
+        ar_call(S, ar_get_env(S, "tick", ar_net_cb_env),
+          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      } break;
     }
   }
 }
@@ -171,7 +182,6 @@ static ar_Value *ar_net_stream_addListener(ar_State *S, ar_Value *args) {
   ar_Value *udata = ar_nth(args, 3);
 
   size_t type = -1;
-
   if (!strcmp(event, "destroy"))      type = DYAD_EVENT_DESTROY;
   else if (!strcmp(event, "accept"))  type = DYAD_EVENT_ACCEPT;
   else if (!strcmp(event, "listen"))  type = DYAD_EVENT_LISTEN;
@@ -184,13 +194,10 @@ static ar_Value *ar_net_stream_addListener(ar_State *S, ar_Value *args) {
   else if (!strcmp(event, "timeout")) type = DYAD_EVENT_TIMEOUT;
   else if (!strcmp(event, "tick"))    type = DYAD_EVENT_TICK;
   else ar_error_str(S, "unkown event '%s'", event);
-
   /* register callback in env */
   ar_set(S, ar_new_symbol(S, event), func, ar_net_cb_env);
-
   /* add our listener function */
   dyad_addListener(s, type, onEvent, udata);
-
   return S->t;
 }
 
@@ -198,9 +205,8 @@ static ar_Value *ar_net_stream_addListener(ar_State *S, ar_Value *args) {
 static ar_Value *ar_net_stream_removeListener(ar_State *S, ar_Value *args) {
   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
   const char *event = ar_check_string(S, ar_nth(args, 1));
+  ar_Value *udata = ar_nth(args, 2);
   size_t type = -1;
-
-
   if (!strcmp(event, "destroy"))      type = DYAD_EVENT_DESTROY;
   else if (!strcmp(event, "accept"))  type = DYAD_EVENT_ACCEPT;
   else if (!strcmp(event, "listen"))  type = DYAD_EVENT_LISTEN;
@@ -213,9 +219,10 @@ static ar_Value *ar_net_stream_removeListener(ar_State *S, ar_Value *args) {
   else if (!strcmp(event, "timeout")) type = DYAD_EVENT_TIMEOUT;
   else if (!strcmp(event, "tick"))    type = DYAD_EVENT_TICK;
   else ar_error_str(S, "unkown event '%s'", event);
-
-  dyad_removeListener(s, type, onEvent, NULL);
-
+  /* remove the callback */
+  ar_set(S, ar_new_symbol(S, event), NULL, ar_net_cb_env);
+  /* remove the event listener */
+  dyad_removeListener(s, type, onEvent, udata);
   return S->t;
 }
 
@@ -224,12 +231,10 @@ static ar_Value *ar_net_stream_removeAllListeners(ar_State *S, ar_Value *args) {
   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
   const char *event = ar_nth(args, 1) ? ar_check_string(S, ar_nth(args, 1)) : NULL;
   size_t type = -1;
-
   if (!event) {
     dyad_removeAllListeners(s, DYAD_EVENT_NULL);
     return S->t;
   }
-
   if (!strcmp(event, "destroy"))      type = DYAD_EVENT_DESTROY;
   else if (!strcmp(event, "accept"))  type = DYAD_EVENT_ACCEPT;
   else if (!strcmp(event, "listen"))  type = DYAD_EVENT_LISTEN;
@@ -242,9 +247,7 @@ static ar_Value *ar_net_stream_removeAllListeners(ar_State *S, ar_Value *args) {
   else if (!strcmp(event, "timeout")) type = DYAD_EVENT_TIMEOUT;
   else if (!strcmp(event, "tick"))    type = DYAD_EVENT_TICK;
   else ar_error_str(S, "unkown event '%s'", event);
-
   dyad_removeAllListeners(s, type);
-
   return S->t;
 }
 
@@ -398,101 +401,101 @@ static ar_Value *ar_net_stream_getBytesReceived(ar_State *S, ar_Value *args) {
 
 /* event handlers */
 
-static void onDestroy(dyad_Event *e);
-static void onAccept(dyad_Event *e);
-static void onListen(dyad_Event *e);
-static void onConnect(dyad_Event *e);
-static void onClose(dyad_Event *e);
-static void onReady(dyad_Event *e);
-static void onData(dyad_Event *e);
-static void onLine(dyad_Event *e);
-static void onError(dyad_Event *e);
-static void onTimeout(dyad_Event *e);
-static void onTick(dyad_Event *e);
+// static void onDestroy(dyad_Event *e);
+// static void onAccept(dyad_Event *e);
+// static void onListen(dyad_Event *e);
+// static void onConnect(dyad_Event *e);
+// static void onClose(dyad_Event *e);
+// static void onReady(dyad_Event *e);
+// static void onData(dyad_Event *e);
+// static void onLine(dyad_Event *e);
+// static void onError(dyad_Event *e);
+// static void onTimeout(dyad_Event *e);
+// static void onTick(dyad_Event *e);
 
-static void onDestroy(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("destroyed: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onDestroy(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("destroyed: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onAccept(dyad_Event *e) {
-  dyad_addListener(e->remote, DYAD_EVENT_DATA, onData, NULL);
-  dyad_addListener(e->remote, DYAD_EVENT_LINE, onLine, NULL);
-  const char *address = dyad_getAddress(e->remote);
-  const size_t port = dyad_getPort(e->remote);
-  printf("accepted: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onAccept(dyad_Event *e) {
+//   dyad_addListener(e->remote, DYAD_EVENT_DATA, onData, NULL);
+//   dyad_addListener(e->remote, DYAD_EVENT_LINE, onLine, NULL);
+//   const char *address = dyad_getAddress(e->remote);
+//   const size_t port = dyad_getPort(e->remote);
+//   printf("accepted: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onListen(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("listening: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onListen(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("listening: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onConnect(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("connected: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onConnect(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("connected: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onClose(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("closed: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onClose(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("closed: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onReady(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("ready: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onReady(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("ready: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onData(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("data: %s:%ld -> %s\n", address, port, e->data);
-}
+// static void onData(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("data: %s:%ld -> %s\n", address, port, e->data);
+// }
 
-static void onLine(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("line: %s:%ld -> %s\n",  address, port, e->data);
-}
+// static void onLine(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("line: %s:%ld -> %s\n",  address, port, e->data);
+// }
 
-static void onError(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("error: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onError(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("error: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onTimeout(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("timeout: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onTimeout(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("timeout: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static void onTick(dyad_Event *e) {
-  const char *address = dyad_getAddress(e->stream);
-  const size_t port = dyad_getPort(e->stream);
-  printf("tick: %s:%ld -> %s\n", address, port, e->msg);
-}
+// static void onTick(dyad_Event *e) {
+//   const char *address = dyad_getAddress(e->stream);
+//   const size_t port = dyad_getPort(e->stream);
+//   printf("tick: %s:%ld -> %s\n", address, port, e->msg);
+// }
 
-static ar_Value *ar_net_stream_register(ar_State *S, ar_Value *args) {
-  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
-  dyad_addListener(s, DYAD_EVENT_DESTROY, onDestroy, NULL);
-  dyad_addListener(s, DYAD_EVENT_ACCEPT,  onAccept,  NULL);
-  dyad_addListener(s, DYAD_EVENT_LISTEN,  onListen,  NULL);
-  dyad_addListener(s, DYAD_EVENT_CONNECT, onConnect, NULL);
-  dyad_addListener(s, DYAD_EVENT_CLOSE,   onClose,   NULL);
-  dyad_addListener(s, DYAD_EVENT_READY,   onReady,   NULL);
-  dyad_addListener(s, DYAD_EVENT_DATA,    onData,    NULL);
-  dyad_addListener(s, DYAD_EVENT_LINE,    onLine,    NULL);
-  dyad_addListener(s, DYAD_EVENT_ERROR,   onError,   NULL);
-  dyad_addListener(s, DYAD_EVENT_TIMEOUT, onTimeout, NULL);
-  dyad_addListener(s, DYAD_EVENT_TICK,    onTick,    NULL);
-  return S->t;
-}
+// static ar_Value *ar_net_stream_register(ar_State *S, ar_Value *args) {
+//   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+//   dyad_addListener(s, DYAD_EVENT_DESTROY, onDestroy, NULL);
+//   dyad_addListener(s, DYAD_EVENT_ACCEPT,  onAccept,  NULL);
+//   dyad_addListener(s, DYAD_EVENT_LISTEN,  onListen,  NULL);
+//   dyad_addListener(s, DYAD_EVENT_CONNECT, onConnect, NULL);
+//   dyad_addListener(s, DYAD_EVENT_CLOSE,   onClose,   NULL);
+//   dyad_addListener(s, DYAD_EVENT_READY,   onReady,   NULL);
+//   dyad_addListener(s, DYAD_EVENT_DATA,    onData,    NULL);
+//   dyad_addListener(s, DYAD_EVENT_LINE,    onLine,    NULL);
+//   dyad_addListener(s, DYAD_EVENT_ERROR,   onError,   NULL);
+//   dyad_addListener(s, DYAD_EVENT_TIMEOUT, onTimeout, NULL);
+//   dyad_addListener(s, DYAD_EVENT_TICK,    onTick,    NULL);
+//   return S->t;
+// }
 
 
 ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
@@ -509,7 +512,7 @@ ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
     { "net-newStream",          ar_net_stream_new                },
     { "net-listen",             ar_net_stream_listen             },
     { "net-connect",            ar_net_stream_connect            },
-  {  "net-register",            ar_net_stream_register              },
+//   {  "net-register",            ar_net_stream_register              },
     { "net-addListener",        ar_net_stream_addListener        },
     { "net-removeListener",     ar_net_stream_removeListener     },
     { "net-removeAllListeners", ar_net_stream_removeAllListeners },
