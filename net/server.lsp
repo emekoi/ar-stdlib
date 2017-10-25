@@ -4,14 +4,20 @@
   ; (net-register S)
 
   (= onLine (fn (udata stm rem msg data sz)
-    (printf "line: %s" data)))
+    (printf "line: (%s %s) -> %s" 
+            (net-getAddress stm) 
+            (net-getPort stm) data)))
 
   (= onError (fn (udata stm rem msg data sz)
-    (printf "error: %s" msg)))
+    (printf "error: (%s %s) -> %s" 
+            (net-getAddress stm) 
+            (net-getPort stm) msg)))
 
   (= onAccept (fn (udata stm rem msg data sz)
     (net-addListener rem "line" onLine rem)
-    (printf "accepted: %s" msg)))
+    (printf "accept: (%s %s) -> %s" 
+            (net-getAddress stm) 
+            (net-getPort stm) msg)))
 
   (net-addListener S "line" onLine nil)
   (net-addListener S "error" onError nil)
