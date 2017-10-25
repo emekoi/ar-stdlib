@@ -14,6 +14,7 @@
 
 static ar_State *ar_net_state;
 static ar_Value *ar_net_panic;
+static ar_Value *ar_net_cb_env;
 
 static ar_Value *ar_net_update(ar_State *S, ar_Value *args) {
   /* update dyad */
@@ -101,21 +102,149 @@ static ar_Value *ar_net_stream_connect(ar_State *S, ar_Value *args) {
   return res == 0 ? S->t : NULL;
 }
 
+#define ar_get_env(S,x,env)    ar_eval(S, ar_new_symbol(S, x), env)
+
+static void onEvent(dyad_Event *e) {
+  ar_State *S = ar_net_state;
+  ar_Value *udata = e->udata;
+  ar_Value *stm = ar_new_udata(S, e->stream, ar_net_stream_gc, NULL);
+  ar_Value *rem = ar_new_udata(S, e->remote, ar_net_stream_gc, NULL);
+  ar_Value *msg = ar_new_string(S, e->msg);
+  ar_Value *data = ar_new_string(S, e->data);
+  ar_Value *sz = ar_new_number(S, e->size);
+
+  switch(e->type) {
+    case DYAD_EVENT_DESTROY: {
+      ar_call(S, ar_get_env(S, "destroy", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_ACCEPT: {
+      ar_call(S, ar_get_env(S, "accept", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_LISTEN: {
+      ar_call(S, ar_get_env(S, "listen", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_CONNECT: {
+      ar_call(S, ar_get_env(S, "connect", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_CLOSE: {
+      ar_call(S, ar_get_env(S, "close", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_READY: {
+      ar_call(S, ar_get_env(S, "ready", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_DATA: {
+      ar_call(S, ar_get_env(S, "data", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_LINE: {
+      ar_call(S, ar_get_env(S, "line", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_ERROR: {
+      ar_call(S, ar_get_env(S, "error", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_TIMEOUT: {
+      ar_call(S, ar_get_env(S, "timeout", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    } case DYAD_EVENT_TICK: {
+      ar_call(S, ar_get_env(S, "tick", ar_net_cb_env),
+        ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
+      break;
+    }
+  }
+}
+
+#define strcmp strcasecmp
 
 static ar_Value *ar_net_stream_addListener(ar_State *S, ar_Value *args) {
-  UNUSED(S); UNUSED(args);
+  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+  const char *event = ar_check_string(S, ar_nth(args, 1));
+  ar_Value *func = ar_check(S, ar_nth(args, 2), AR_TFUNC);
+  ar_Value *udata = ar_nth(args, 3);
+
+  size_t type = -1;
+
+  if (!strcmp(event, "destroy"))      type = DYAD_EVENT_DESTROY;
+  else if (!strcmp(event, "accept"))  type = DYAD_EVENT_ACCEPT;
+  else if (!strcmp(event, "listen"))  type = DYAD_EVENT_LISTEN;
+  else if (!strcmp(event, "connect")) type = DYAD_EVENT_CONNECT;
+  else if (!strcmp(event, "close"))   type = DYAD_EVENT_CLOSE;
+  else if (!strcmp(event, "ready"))   type = DYAD_EVENT_READY;
+  else if (!strcmp(event, "data"))    type = DYAD_EVENT_DATA;
+  else if (!strcmp(event, "line"))    type = DYAD_EVENT_LINE;
+  else if (!strcmp(event, "error"))   type = DYAD_EVENT_ERROR;
+  else if (!strcmp(event, "timeout")) type = DYAD_EVENT_TIMEOUT;
+  else if (!strcmp(event, "tick"))    type = DYAD_EVENT_TICK;
+  else ar_error_str(S, "unkown event '%s'", event);
+
+  /* register callback in env */
+  ar_set(S, ar_new_symbol(S, event), func, ar_net_cb_env);
+
+  /* add our listener function */
+  dyad_addListener(s, type, onEvent, udata);
+
   return S->t;
 }
 
 
 static ar_Value *ar_net_stream_removeListener(ar_State *S, ar_Value *args) {
-  UNUSED(S); UNUSED(args);
+  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+  const char *event = ar_check_string(S, ar_nth(args, 1));
+  size_t type = -1;
+
+
+  if (!strcmp(event, "destroy"))      type = DYAD_EVENT_DESTROY;
+  else if (!strcmp(event, "accept"))  type = DYAD_EVENT_ACCEPT;
+  else if (!strcmp(event, "listen"))  type = DYAD_EVENT_LISTEN;
+  else if (!strcmp(event, "connect")) type = DYAD_EVENT_CONNECT;
+  else if (!strcmp(event, "close"))   type = DYAD_EVENT_CLOSE;
+  else if (!strcmp(event, "ready"))   type = DYAD_EVENT_READY;
+  else if (!strcmp(event, "data"))    type = DYAD_EVENT_DATA;
+  else if (!strcmp(event, "line"))    type = DYAD_EVENT_LINE;
+  else if (!strcmp(event, "error"))   type = DYAD_EVENT_ERROR;
+  else if (!strcmp(event, "timeout")) type = DYAD_EVENT_TIMEOUT;
+  else if (!strcmp(event, "tick"))    type = DYAD_EVENT_TICK;
+  else ar_error_str(S, "unkown event '%s'", event);
+
+  dyad_removeListener(s, type, onEvent, NULL);
+
   return S->t;
 }
 
 
 static ar_Value *ar_net_stream_removeAllListeners(ar_State *S, ar_Value *args) {
-  UNUSED(S); UNUSED(args);
+  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+  const char *event = ar_nth(args, 1) ? ar_check_string(S, ar_nth(args, 1)) : NULL;
+  size_t type = -1;
+
+  if (!event) {
+    dyad_removeAllListeners(s, DYAD_EVENT_NULL);
+    return S->t;
+  }
+
+  if (!strcmp(event, "destroy"))      type = DYAD_EVENT_DESTROY;
+  else if (!strcmp(event, "accept"))  type = DYAD_EVENT_ACCEPT;
+  else if (!strcmp(event, "listen"))  type = DYAD_EVENT_LISTEN;
+  else if (!strcmp(event, "connect")) type = DYAD_EVENT_CONNECT;
+  else if (!strcmp(event, "close"))   type = DYAD_EVENT_CLOSE;
+  else if (!strcmp(event, "ready"))   type = DYAD_EVENT_READY;
+  else if (!strcmp(event, "data"))    type = DYAD_EVENT_DATA;
+  else if (!strcmp(event, "line"))    type = DYAD_EVENT_LINE;
+  else if (!strcmp(event, "error"))   type = DYAD_EVENT_ERROR;
+  else if (!strcmp(event, "timeout")) type = DYAD_EVENT_TIMEOUT;
+  else if (!strcmp(event, "tick"))    type = DYAD_EVENT_TICK;
+  else ar_error_str(S, "unkown event '%s'", event);
+
+  dyad_removeAllListeners(s, type);
+
   return S->t;
 }
 
@@ -144,29 +273,23 @@ static int is_alpha(char c) {
 static ar_Value *parse_format(ar_State *S, const char c, ar_Value *args) {
   int num = round(ar_to_number(S, ar_car(args)));
   switch (c) {
-    case 'c': case 'u': { 
+    case 'c': case 'u': {
       ar_check_number(S, ar_car(args));
       format(S, c, (unsigned int)num);
-    } 
-    case 'i': case 'd': case 'x': 
+    } case 'i': case 'd': case 'x':
     case 'X': {
       ar_check_number(S, ar_car(args));
       format(S, c, num);
-    }
-    case 'f': case 'g': { 
+    } case 'f': case 'g': {
       ar_check_number(S, ar_car(args));
       format(S, c, ar_to_number(S, ar_car(args)));
-    }
-    case 'p': {
+    } case 'p': {
       format(S, c, ar_car(args));
-    }
-    case 'q': { 
+    } case 'q': {
       format(S, c, ar_to_string_value(S, ar_car(args), 1)->u.str.s);
-    }
-    case 's': {
+    } case 's': {
       format(S, c, ar_to_string_value(S, ar_car(args), 0)->u.str.s);
-    }
-    default: 
+    } default:
       if (is_alpha(c))
         ar_error_str(S, "invalid option '%c'", c);
       else
@@ -408,7 +531,8 @@ ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
   for (int i = 0; funcs[i].name; i++) {
     ar_bind_global(S, funcs[i].name, ar_new_cfunc(S, funcs[i].fn));
   }
-
+  /* initialize env for callbacks */
+  ar_net_cb_env = ar_new_env(S, NULL);
   /* initialize dyad for the user */
   dyad_init();
   /* set the panic handler */
