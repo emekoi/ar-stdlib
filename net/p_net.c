@@ -112,7 +112,7 @@ static void onEvent(dyad_Event *e) {
   ar_Value *msg = ar_new_string(S, e->msg);
   ar_Value *data = ar_new_string(S, e->data);
   ar_Value *sz = ar_new_number(S, e->size);
-
+  /* since we have access the func env add these values */
   switch(e->type) {
     case DYAD_EVENT_DESTROY: {
       if (get_env(S, "destroy", ar_net_cb_env)) {
