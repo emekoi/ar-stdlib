@@ -4,4 +4,3 @@ BINARY = fs
 : foreach *.c |> !COMPILE |>
 : fs/fs.c |> !COMPILE |>
 : *.o |> !LINK |>
-: foreach *.o |> rm -rf %f |>

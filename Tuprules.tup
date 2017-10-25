@@ -1,5 +1,6 @@
 CFLAGS += -Wall -Wextra -c -fPIC -fno-strict-aliasing
 LFLAGS += -shared
+SUFFIX = so
 
 ifneq (@(OS),osx)
 LFLAGS += -Wl,-soname,
@@ -9,8 +10,9 @@ endif
 
 ifeq (@(OS),win32)
 LINK += -lws2_32
+SUFFIX = dll
 endif
 
 
 !COMPILE = |> gcc $(CFLAGS) %f -o %o |> %B.o
-!LINK = |> gcc $(LFLAGS)%o %f -o %o $(LINK) |> $(BINARY).so
+!LINK = |> gcc $(LFLAGS)%o %f -o %o $(LINK) |> $(BINARY).$(SUFFIX)

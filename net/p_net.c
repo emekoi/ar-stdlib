@@ -47,7 +47,7 @@ static ar_Value *ar_net_setTickInterval(ar_State *S, ar_Value *args) {
 }
 
 
-static void panic(const char *message) {
+static void net_panic(const char *message) {
   ar_call_global(ar_net_state, "net-panic",
     ar_new_string(ar_net_state, message));
 }
@@ -66,6 +66,7 @@ static ar_Value *ar_net_stream_gc(ar_State *S, ar_Value *args) {
 
 
 static ar_Value *ar_net_stream_new(ar_State *S, ar_Value *args) {
+  UNUSED(args);
   return ar_new_udata(S, dyad_newStream(), ar_net_stream_gc, NULL);
 }
 
@@ -101,11 +102,30 @@ static ar_Value *ar_net_stream_connect(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_net_stream_write(ar_State *S, ar_Value *args){
+static ar_Value *ar_net_stream_addListener(ar_State *S, ar_Value *args) {
+  UNUSED(S); UNUSED(args);
+  return S->t;
+}
+
+
+static ar_Value *ar_net_stream_removeListener(ar_State *S, ar_Value *args) {
+  UNUSED(S); UNUSED(args);
+  return S->t;
+}
+
+
+static ar_Value *ar_net_stream_removeAllListeners(ar_State *S, ar_Value *args) {
+  UNUSED(S); UNUSED(args);
+  return S->t;
+}
+
+
+static ar_Value *ar_net_stream_write(ar_State *S, ar_Value *args) {
   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
   size_t len;
   const char *str = ar_to_stringl(S, ar_nth(args, 1), &len);
-  dyad_write(s, str, len);
+  int sz = ar_nth(args, 2) ? ar_to_number(S, ar_nth(args, 2)) : -1;
+  dyad_write(s, str, sz > 0 ? (size_t)sz : len);
   return S->t;
 }
 
@@ -117,30 +137,38 @@ static int is_alpha(char c) {
 }
 
 
-#define format(S, c, v) ar_new_stringf(S, "%"c, v)
+#define format(S, c, v) \
+  char buf[2]; buf[0] = '%'; buf[1] = c; \
+  return ar_new_stringf(S, buf, v)
 
-static ar_Value *parse_format(ar_State *S, const char *c, ar_Value *args) {
+static ar_Value *parse_format(ar_State *S, const char c, ar_Value *args) {
   int num = round(ar_to_number(S, ar_car(args)));
-  switch (*c++) {
-    case 'c': case 'u': 
+  switch (c) {
+    case 'c': case 'u': { 
       ar_check_number(S, ar_car(args));
-      return format(S, *c, (unsigned int)num);
+      format(S, c, (unsigned int)num);
+    } 
     case 'i': case 'd': case 'x': 
-    case 'X': case 'o':
+    case 'X': {
       ar_check_number(S, ar_car(args));
-      return format(S, *c, num);
-    case 'e': case 'E': case 'f': case 'g': 
+      format(S, c, num);
+    }
+    case 'f': case 'g': { 
       ar_check_number(S, ar_car(args));
-      return format(S, *c, ar_to_number(S, ar_car(args)));
-    case 'p':
-      return format(S, *c, ar_car(args));
-    case 'q': 
-      return format(S, *c, ar_to_string_value(S, ar_car(args), 1)->u.str.s);
-    case 's':
-      return format(S, *c, ar_to_string_value(S, ar_car(args), 0)->u.str.s);
+      format(S, c, ar_to_number(S, ar_car(args)));
+    }
+    case 'p': {
+      format(S, c, ar_car(args));
+    }
+    case 'q': { 
+      format(S, c, ar_to_string_value(S, ar_car(args), 1)->u.str.s);
+    }
+    case 's': {
+      format(S, c, ar_to_string_value(S, ar_car(args), 0)->u.str.s);
+    }
     default: 
-      if (is_alpha(*c))
-        ar_error_str(S, "invalid option '%c'", *c);
+      if (is_alpha(c))
+        ar_error_str(S, "invalid option '%c'", c);
       else
         ar_error_str(S, "expected option");
   }
@@ -148,7 +176,30 @@ static ar_Value *parse_format(ar_State *S, const char *c, ar_Value *args) {
 }
 
 
-static ar_Value *ar_net_stream_writef(ar_State *S, ar_Value *args){
+static ar_Value *join_list_of_strings(ar_State *S, ar_Value *list) {
+  ar_Value *res;
+  /* Get combined length of strings */
+  ar_Value *v = list;
+  size_t len = 0;
+  while (v) {
+    len += v->u.pair.car->u.str.len;
+    v = v->u.pair.cdr;
+  }
+  /* Join list of strings */
+  res = ar_new_stringl(S, NULL, len);
+  v = list;
+  len = 0;
+  while (v) {
+    ar_Value *x = v->u.pair.car;
+    memcpy(res->u.str.s + len, x->u.str.s, x->u.str.len);
+    len += x->u.str.len;
+    v = v->u.pair.cdr;
+  }
+  return res;
+}
+
+
+static ar_Value *ar_net_stream_writef(ar_State *S, ar_Value *args) {
   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
   size_t len;
   const char *str = ar_to_stringl(S, ar_nth(args, 1), &len);
@@ -163,23 +214,23 @@ static ar_Value *ar_net_stream_writef(ar_State *S, ar_Value *args){
       char buf[2]; buf[0] = *str++; buf[1] = '\0';
       last = ar_append_tail(S, last, ar_new_string(S, buf));
     } else {
-      last = ar_append_tail(S, last, parse_format(S, str++, ar_cdr(args)));
+      last = ar_append_tail(S, last, parse_format(S, *str++, ar_cdr(args)));
       args = ar_cdr(args);
     }
-  } 
-  dyad_writef(s, join_list_of_strings(S, res));
+  }
+  dyad_writef(s, join_list_of_strings(S, res)->u.str.s);
   return S->t;
 }
 
 
-static ar_Value *ar_net_stream_setTimeout(ar_State *S, ar_Value *args){
+static ar_Value *ar_net_stream_setTimeout(ar_State *S, ar_Value *args) {
   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
   dyad_setTimeout(s, ar_check_number(S, ar_nth(args, 1)));
   return S->t;
 }
 
 
-static ar_Value *ar_net_stream_setNoDelay(ar_State *S, ar_Value *args){
+static ar_Value *ar_net_stream_setNoDelay(ar_State *S, ar_Value *args) {
   dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
   dyad_setNoDelay(s, ar_nth(args, 2) == S->t);
   return S->t;
@@ -222,12 +273,103 @@ static ar_Value *ar_net_stream_getBytesReceived(ar_State *S, ar_Value *args) {
   return ar_new_number(S, dyad_getBytesReceived(s));
 }
 
+/* event handlers */
 
-/*
-TODO: ADD BROADCAST FUNCTION
-  IN THE ACCEPT EVENT LIDSTENER ADD ALL THE REMOTES IN TAND ARRAY
-*/
+static void onDestroy(dyad_Event *e);
+static void onAccept(dyad_Event *e);
+static void onListen(dyad_Event *e);
+static void onConnect(dyad_Event *e);
+static void onClose(dyad_Event *e);
+static void onReady(dyad_Event *e);
+static void onData(dyad_Event *e);
+static void onLine(dyad_Event *e);
+static void onError(dyad_Event *e);
+static void onTimeout(dyad_Event *e);
+static void onTick(dyad_Event *e);
 
+static void onDestroy(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("destroyed: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onAccept(dyad_Event *e) {
+  dyad_addListener(e->remote, DYAD_EVENT_DATA, onData, NULL);
+  dyad_addListener(e->remote, DYAD_EVENT_LINE, onLine, NULL);
+  const char *address = dyad_getAddress(e->remote);
+  const size_t port = dyad_getPort(e->remote);
+  printf("accepted: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onListen(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("listening: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onConnect(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("connected: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onClose(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("closed: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onReady(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("ready: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onData(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("data: %s:%ld -> %s\n", address, port, e->data);
+}
+
+static void onLine(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("line: %s:%ld -> %s\n",  address, port, e->data);
+}
+
+static void onError(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("error: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onTimeout(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("timeout: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static void onTick(dyad_Event *e) {
+  const char *address = dyad_getAddress(e->stream);
+  const size_t port = dyad_getPort(e->stream);
+  printf("tick: %s:%ld -> %s\n", address, port, e->msg);
+}
+
+static ar_Value *ar_net_stream_register(ar_State *S, ar_Value *args) {
+  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+  dyad_addListener(s, DYAD_EVENT_DESTROY, onDestroy, NULL);
+  dyad_addListener(s, DYAD_EVENT_ACCEPT,  onAccept,  NULL);
+  dyad_addListener(s, DYAD_EVENT_LISTEN,  onListen,  NULL);
+  dyad_addListener(s, DYAD_EVENT_CONNECT, onConnect, NULL);
+  dyad_addListener(s, DYAD_EVENT_CLOSE,   onClose,   NULL);
+  dyad_addListener(s, DYAD_EVENT_READY,   onReady,   NULL);
+  dyad_addListener(s, DYAD_EVENT_DATA,    onData,    NULL);
+  dyad_addListener(s, DYAD_EVENT_LINE,    onLine,    NULL);
+  dyad_addListener(s, DYAD_EVENT_ERROR,   onError,   NULL);
+  dyad_addListener(s, DYAD_EVENT_TIMEOUT, onTimeout, NULL);
+  dyad_addListener(s, DYAD_EVENT_TICK,    onTick,    NULL);
+  return S->t;
+}
 
 
 ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
@@ -244,13 +386,14 @@ ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
     { "net-newStream",          ar_net_stream_new                },
     { "net-listen",             ar_net_stream_listen             },
     { "net-connect",            ar_net_stream_connect            },
-    // { "net-addListener",        ar_net_stream_addListener        },
-    // { "net-removeListener",     ar_net_stream_removeListener     },
-    // { "net-removeAllListeners", ar_net_stream_removeAllListeners },
+  {  "net-register",            ar_net_stream_register              },
+    { "net-addListener",        ar_net_stream_addListener        },
+    { "net-removeListener",     ar_net_stream_removeListener     },
+    { "net-removeAllListeners", ar_net_stream_removeAllListeners },
     { "net-end",                ar_net_stream_end                },
     { "net-close",              ar_net_stream_close              },
     { "net-write",              ar_net_stream_write              },
-    { "net-writef",             ar_net_stream_vwritef            },
+    { "net-writef",             ar_net_stream_writef             },
     { "net-setTimeout",         ar_net_stream_setTimeout         },
     { "net-setNoDelay",         ar_net_stream_setNoDelay         },
     { "net-getState",           ar_net_stream_getState           },
@@ -272,7 +415,7 @@ ar_Value *ar_open_net(ar_State *S, ar_Value* args) {
   ar_eval(S, ar_parse(S,
     "(= net-panic (fn (err) (print err) (exit)))",
     "net_panic"), S->global);
-  dyad_atPanic(panic);
+  dyad_atPanic(net_panic);
   /* run dyad_shutdown when the user is done */
   atexit(dyad_shutdown);
   return NULL;

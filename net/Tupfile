@@ -4,4 +4,3 @@ BINARY = net
 : foreach *.c |> !COMPILE |>
 : dyad/dyad.c |> !COMPILE |>
 : *.o |> !LINK |>
-: foreach *.o |> rm -rf %f |>
