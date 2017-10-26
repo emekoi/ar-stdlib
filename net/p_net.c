@@ -12,6 +12,21 @@
 
 #define UNUSED(x) ((void) x)
 
+static const char *EVENT[] = {
+  "null",
+  "destroy",
+  "accept",
+  "listen",
+  "connect",
+  "close",
+  "ready",
+  "data",
+  "line",
+  "error",
+  "timeout",
+  "tick"
+}; 
+
 static ar_State *ar_net_state;
 static ar_Value *ar_net_panic;
 static ar_Value *ar_net_cb_env;
@@ -106,71 +121,20 @@ static ar_Value *ar_net_stream_connect(ar_State *S, ar_Value *args) {
 
 static void onEvent(dyad_Event *e) {
   ar_State *S = ar_net_state;
+  const char *event = EVENT[e->type];
   ar_Value *udata = e->udata;
-  ar_Value *stm = ar_new_udata(S, e->stream, ar_net_stream_gc, NULL);
-  ar_Value *rem = ar_new_udata(S, e->remote, ar_net_stream_gc, NULL);
+  ar_Value *stream = ar_new_udata(S, e->stream, ar_net_stream_gc, NULL);
+  ar_Value *remote = ar_new_udata(S, e->remote, ar_net_stream_gc, NULL);
   ar_Value *msg = ar_new_string(S, e->msg);
   ar_Value *data = ar_new_string(S, e->data);
-  ar_Value *sz = ar_new_number(S, e->size);
-  /* since we have access the func env add these values */
-  switch(e->type) {
-    case DYAD_EVENT_DESTROY: {
-      if (get_env(S, "destroy", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "destroy", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_ACCEPT: {
-      if (_get_env(S, "accept", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "accept", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_LISTEN: {
-      if (_get_env(S, "listen", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "listen", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_CONNECT: {
-      if (get_env(S, "connect", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "connect", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_CLOSE: {
-      if (r_get_env(S, "close", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "close", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_READY: {
-      if (r_get_env(S, "ready", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "ready", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_DATA: {
-      if (ar_get_env(S, "data", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "data", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_LINE: {
-      if (ar_get_env(S, "line", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "line", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_ERROR: {
-      if (r_get_env(S, "error", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "error", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_TIMEOUT: {
-      if (get_env(S, "timeout", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "timeout", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    } case DYAD_EVENT_TICK: {
-      if (ar_get_env(S, "tick", ar_net_cb_env)) {
-        ar_call(S, ar_get_env(S, "tick", ar_net_cb_env),
-          ar_new_list(S, 6, udata, stm, rem, msg, data, sz));
-      } break;
-    }
-  }
+  ar_Value *size = ar_new_number(S, e->size);
+  ar_set(S, ar_new_symbol(S, "udata"),  udata,  ar_get_env(S, event, ar_net_cb_env)->u.func.env);
+  ar_set(S, ar_new_symbol(S, "stream"), stream, ar_get_env(S, event, ar_net_cb_env)->u.func.env);
+  ar_set(S, ar_new_symbol(S, "remote"), remote, ar_get_env(S, event, ar_net_cb_env)->u.func.env);
+  ar_set(S, ar_new_symbol(S, "msg"),    msg,    ar_get_env(S, event, ar_net_cb_env)->u.func.env);
+  ar_set(S, ar_new_symbol(S, "data"),   data,   ar_get_env(S, event, ar_net_cb_env)->u.func.env);
+  ar_set(S, ar_new_symbol(S, "size"),   size,   ar_get_env(S, event, ar_net_cb_env)->u.func.env);
+  ar_call(S, ar_get_env(S, event, ar_net_cb_env), NULL);
 }
 
 #define strcmp strcasecmp
@@ -180,7 +144,6 @@ static ar_Value *ar_net_stream_addListener(ar_State *S, ar_Value *args) {
   const char *event = ar_check_string(S, ar_nth(args, 1));
   ar_Value *func = ar_check(S, ar_nth(args, 2), AR_TFUNC);
   ar_Value *udata = ar_nth(args, 3);
-
   size_t type = -1;
   if (!strcmp(event, "destroy"))      type = DYAD_EVENT_DESTROY;
   else if (!strcmp(event, "accept"))  type = DYAD_EVENT_ACCEPT;

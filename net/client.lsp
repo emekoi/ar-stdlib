@@ -1,28 +1,33 @@
 (do
   (import "net/net")
+  (import "fs/fs")
   (= C (net-newStream))
-  ;(net-register C)
+  (fs-mount ".")
   
-  (= onLine (fn (udata stm rem msg data sz)
+  (= onLine (fn ()
     (printf "line: (%s %s) -> %s" 
-            (net-getAddress stm) 
-            (net-getPort stm) data)))
+      (net-getAddress stream) 
+      (net-getPort stream) data)))
 
-  (= onError (fn (udata stm rem msg data sz)
+  (= onError (fn ()
     (printf "error: (%s %s) -> %s" 
-            (net-getAddress stm) 
-            (net-getPort stm) msg)))
+      (net-getAddress stream) 
+      (net-getPort stream) msg)))
 
-  (= onConnect (fn (udata stm rem msg data sz)
+  (= onConnect (fn ()
     (printf "connect: (%s %s) -> %s" 
-            (net-getAddress stm) 
-            (net-getPort stm) msg)))
+      (net-getAddress stream) 
+      (net-getPort stream) msg)))
 
-  (net-addListener S "line" onLine nil)
-  (net-addListener S "error" onError nil)
-  (net-addListener S "connect" onConnect nil)
+  (net-addListener C "line" onLine nil)
+  (net-addListener C "error" onError nil)
+  (net-addListener C "connect" onConnect nil)
+
+  (= FILE (fs-read "net/client.lsp"))
   
   (net-connect C "localhost" 8000)
+
+  (net-write C FILE)
+
   (while (> (net-getStreamCount) 0)
     (net-update)
-    (net-write C (read))))

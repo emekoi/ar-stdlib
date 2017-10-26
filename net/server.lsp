@@ -1,23 +1,22 @@
 (do
   (import "net/net")
   (= S (net-newStream))
-  ; (net-register S)
 
-  (= onLine (fn (udata stm rem msg data sz)
+  (= onLine (fn ()
     (printf "line: (%s %s) -> %s" 
-            (net-getAddress stm) 
-            (net-getPort stm) data)))
+      (net-getAddress stream) 
+      (net-getPort stream) data)))
 
-  (= onError (fn (udata stm rem msg data sz)
+  (= onError (fn ()
     (printf "error: (%s %s) -> %s" 
-            (net-getAddress stm) 
-            (net-getPort stm) msg)))
+      (net-getAddress stream) 
+      (net-getPort stream) msg)))
 
-  (= onAccept (fn (udata stm rem msg data sz)
-    (net-addListener rem "line" onLine rem)
+  (= onAccept (fn ()
+    (net-addListener remote "line" onLine remote)
     (printf "accept: (%s %s) -> %s" 
-            (net-getAddress stm) 
-            (net-getPort stm) msg)))
+      (net-getAddress stream) 
+      (net-getPort stream) msg)))
 
   (net-addListener S "line" onLine nil)
   (net-addListener S "error" onError nil)
