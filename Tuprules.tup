@@ -1,18 +1,21 @@
+.gitignore
+
 CFLAGS += -Wall -Wextra -c -fPIC -fno-strict-aliasing
 LFLAGS += -shared
+LINK += -laria
 SUFFIX = so
 
-ifneq (@(OS),osx)
-LFLAGS += -Wl,-soname,
+ifneq (@(TUP_PLATFORM),macosx)
+  LFLAGS += -Wl,-soname,
 else
-LFLAGS += -Wl,-install_name,
+  LFLAGS += -Wl,-install_name,
 endif
 
-ifeq (@(OS),win32)
-LINK += -lws2_32
-SUFFIX = dll
+ifeq (@(TUP_PLATFORM),win32)
+  SUFFIX = dll
 endif
-
 
 !COMPILE = |> gcc $(CFLAGS) %f -o %o |> %B.o
 !LINK = |> gcc $(LFLAGS)%o %f -o %o $(LINK) |> $(BINARY).$(SUFFIX)
+!SETUP = |> mkdir -p @(INSTALL) |>
+!INSTALL = |> install -m644 %f @(INSTALL) |>

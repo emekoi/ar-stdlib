@@ -55,10 +55,8 @@ dkms.conf
 # Other
 *.ll
 *.inc
-.tempsrc/
-bin/
 *.swp
 *.tmp
-*.pyc
 .DS_Store
 .tup/
+build-*/

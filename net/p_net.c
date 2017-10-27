@@ -27,9 +27,11 @@ static const char *EVENT[] = {
   "tick"
 }; 
 
+
 static ar_State *ar_net_state;
 static ar_Value *ar_net_panic;
 static ar_Value *ar_net_cb_env;
+
 
 static ar_Value *ar_net_update(ar_State *S, ar_Value *args) {
   /* update dyad */
@@ -76,7 +78,8 @@ static ar_Value *ar_net_setPanic(ar_State *S, ar_Value *args) {
 
 
 static ar_Value *ar_net_stream_gc(ar_State *S, ar_Value *args) {
-  dyad_end(ar_check_udata(S, ar_nth(args, 0)));
+  dyad_Stream *s = ar_check_udata(S, ar_nth(args, 0));
+  if (s) dyad_end(s);
   return NULL;
 }
 

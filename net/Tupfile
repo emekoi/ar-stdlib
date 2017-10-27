@@ -1,6 +1,13 @@
 include_rules
 
+ifeq (@(OS),win32)
+  LINK += -lws2_32
+  SUFFIX = dll
+endif
+
 BINARY = net
 : foreach *.c |> !COMPILE |>
 : dyad/dyad.c |> !COMPILE |>
 : *.o |> !LINK |>
+: |> !SETUP |>
+: $(BINARY).$(SUFFIX) |> !INSTALL |>
