@@ -1,7 +1,7 @@
 .gitignore
 
 CFLAGS += -Wall -Wextra -c -fPIC -fno-strict-aliasing
-LFLAGS += -shared
+LFLAGS += -shared -fPIC
 LINK += -laria
 SUFFIX = so
 
