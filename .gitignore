@@ -58,5 +58,4 @@ dkms.conf
 *.swp
 *.tmp
 .DS_Store
-.tup/
-build-*/
+.vscode/

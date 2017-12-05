@@ -1,0 +1,12 @@
+{
+  "name": "os",
+  "target": "lib",
+  "version": "0.1.1",
+  "src": [ "p_os.c" ],
+  "include": [  ],
+  "link": [  ],
+  "define": [  ],
+  "lflags": [  ],
+  "cflags": [  ],
+  "extra": [  ]
+}

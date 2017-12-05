@@ -3,6 +3,7 @@
 CFLAGS += -Wall -Wextra -c -fPIC -fno-strict-aliasing
 LFLAGS += -shared -fPIC
 LINK += -laria
+
 SUFFIX = so
 
 ifneq (@(TUP_PLATFORM),macosx)

@@ -10,6 +10,7 @@
 #include <aria/aria.h>
 #include "fs/fs.h"
 
+
 #define UNUSED(x) ((void) x)
 #define AR_GET_ARG(idx, type) S, ar_check(S, ar_nth(args, idx), type)
 #define AR_GET_STRING(idx) (char *)ar_to_string(AR_GET_ARG(idx, AR_TSTRING))
@@ -24,7 +25,7 @@ static void checkError(ar_State *S, int err, const char *str) {
 }
 
 
-static ar_Value *ar_fs_mount(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_mount(ar_State *S, ar_Value *args) {
   const char *path = AR_GET_STRING(0);
   int res = fs_mount(path);
   if (res != FS_ESUCCESS) {
@@ -34,14 +35,14 @@ static ar_Value *ar_fs_mount(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_unmount(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_unmount(ar_State *S, ar_Value *args) {
   const char *path = AR_GET_STRING(0);
   fs_unmount(path);
   return S->t;
 }
 
 
-static ar_Value *ar_fs_setWritePath(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_setWritePath(ar_State *S, ar_Value *args) {
   const char *path = AR_GET_STRING(0);
   int res = fs_setWritePath(path);
   checkError(S, res, path);
@@ -49,13 +50,13 @@ static ar_Value *ar_fs_setWritePath(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_exists(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_exists(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   return fs_exists(filename) ? S->t : NULL;
 }
 
 
-static ar_Value *ar_fs_getSize(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_getSize(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   size_t sz;
   int res = fs_size(filename, &sz);
@@ -64,7 +65,7 @@ static ar_Value *ar_fs_getSize(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_getModified(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_getModified(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   unsigned t;
   int res = fs_modified(filename, &t);
@@ -73,7 +74,7 @@ static ar_Value *ar_fs_getModified(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_read(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_read(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   size_t len;
   char *data = fs_read(filename, &len);
@@ -85,19 +86,19 @@ static ar_Value *ar_fs_read(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_isDir(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_isDir(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   return fs_isDir(filename) ? S->t : NULL;
 }
 
 
-static ar_Value *ar_fs_isFile(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_isFile(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   return fs_isFile(filename) ? S->t : NULL;
 }
 
 
-static ar_Value *ar_fs_listDir(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_listDir(ar_State *S, ar_Value *args) {
   const char *path = AR_GET_STRING(0);
   fs_FileListNode *list = fs_listDir(path);
   ar_Value *res = NULL, **last = &res;
@@ -111,7 +112,7 @@ static ar_Value *ar_fs_listDir(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_write(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_write(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   size_t len;
   const char *data = AR_GET_STRINGL(1, len);
@@ -121,7 +122,7 @@ static ar_Value *ar_fs_write(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_append(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_append(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   size_t len;
   const char *data = AR_GET_STRINGL(1, len);
@@ -131,7 +132,7 @@ static ar_Value *ar_fs_append(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_delete(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_delete(ar_State *S, ar_Value *args) {
   const char *filename = AR_GET_STRING(0);
   int res = fs_delete(filename);
   if (res != FS_ESUCCESS) {
@@ -141,7 +142,7 @@ static ar_Value *ar_fs_delete(ar_State *S, ar_Value *args) {
 }
 
 
-static ar_Value *ar_fs_makeDirs(ar_State *S, ar_Value *args) {
+static ar_Value *ar_io_makeDirs(ar_State *S, ar_Value *args) {
   const char *path = AR_GET_STRING(0);
   int res = fs_makeDirs(path);
   if (res != FS_ESUCCESS) {
@@ -155,20 +156,20 @@ ar_Value *ar_open_fs(ar_State *S, ar_Value* args) {
   UNUSED(args);
   /* list of functions to register */
   struct { const char *name; ar_CFunc fn; } funcs[] = {
-    { "fs-mount",        ar_fs_mount        }, /* works */
-    { "fs-unmount",      ar_fs_unmount      }, /* works */
-    { "fs-setWritePath", ar_fs_setWritePath }, /* works */
-    { "fs-exists",       ar_fs_exists       }, /* works */
-    { "fs-getSize",      ar_fs_getSize      }, /* works */
-    { "fs-getModified",  ar_fs_getModified  }, /* works */
-    { "fs-read",         ar_fs_read         }, /* works */
-    { "fs-isDir",        ar_fs_isDir        }, /* works */
-    { "fs-isFile",       ar_fs_isFile       }, /* works */
-    { "fs-listDir",      ar_fs_listDir      }, /* works */
-    { "fs-write",        ar_fs_write        }, /* works */
-    { "fs-append",       ar_fs_append       }, /* works */
-    { "fs-delete",       ar_fs_delete       }, /* works */
-    { "fs-makeDirs",     ar_fs_makeDirs     }, /* works */
+    { "io-mount",        ar_io_mount        }, /* works */
+    { "io-unmount",      ar_io_unmount      }, /* works */
+    { "io-setWritePath", ar_io_setWritePath }, /* works */
+    { "io-exists",       ar_io_exists       }, /* works */
+    { "io-getSize",      ar_io_getSize      }, /* works */
+    { "io-getModified",  ar_io_getModified  }, /* works */
+    { "io-read",         ar_io_read         }, /* works */
+    { "io-isDir",        ar_io_isDir        }, /* works */
+    { "io-isFile",       ar_io_isFile       }, /* works */
+    { "io-listDir",      ar_io_listDir      }, /* works */
+    { "io-write",        ar_io_write        }, /* works */
+    { "io-append",       ar_io_append       }, /* works */
+    { "io-delete",       ar_io_delete       }, /* works */
+    { "io-makeDirs",     ar_io_makeDirs     }, /* works */
     { NULL, NULL }
   };
 
